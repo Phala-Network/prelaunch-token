@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/lifecycle/Pausable.sol";
 contract PHAToken is ERC20, ERC20Detailed, Pausable, Ownable {
     constructor(uint256 initialSupply) ERC20Detailed("Phala", "PHA", 18) public {
         _mint(msg.sender, initialSupply);
+        pause();
     }
 
     // Taken from ERC20Pausable

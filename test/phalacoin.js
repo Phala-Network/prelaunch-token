@@ -13,12 +13,18 @@ contract('PHA', accounts => {
     pha = await PHAToken.deployed();
   })
 
+  it('should be paused when initialized', async () => {
+    assert(await pha.paused(), 'Not paused');
+  })
+
   it('should put 1B PHA in the first account', async () => {
+    await pha.unpause();
     const balance = await pha.balanceOf(accounts[0]);
     assert(balance.eq(SUPPLY), '1B wasn\'t in the first account');
   });
 
   it('should send 1 PHA to accounts[1]', async () => {
+    console.log(await pha.paused());
     await pha.transfer(accounts[1], UNIT);
     const balance = await pha.balanceOf(accounts[0]);
     assert(balance.eq(SUPPLY.sub(UNIT)), 'Bad balance');
@@ -47,7 +53,6 @@ contract('PHA', accounts => {
   });
 
   it('should reject non-owner\'s call to ownerTransfer', async () => {
-    const pha = await PHAToken.deployed()
     await truffleAssert.reverts(
       pha.ownerTransfer(accounts[0], UNIT, {from: accounts[1]}),
       'Ownable: caller is not the owner.'

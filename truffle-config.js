@@ -24,6 +24,10 @@
 // const fs = require('fs');
 // const mnemonic = fs.readFileSync(".secret").toString().trim();
 
+const HDWalletProvider = require("@truffle/hdwallet-provider");
+const TrezorWeb3Provider = require("@daonomic/trezor-web3-provider");
+const keys = require('./keys');
+
 module.exports = {
   /**
    * Networks define how you connect to your ethereum client and let you set the
@@ -60,14 +64,33 @@ module.exports = {
 
     // Useful for deploying to a public network.
     // NB: It's important to wrap the provider as a function.
-    // ropsten: {
-      // provider: () => new HDWalletProvider(mnemonic, `https://ropsten.infura.io/v3/YOUR-PROJECT-ID`),
-      // network_id: 3,       // Ropsten's id
-      // gas: 5500000,        // Ropsten has a lower block limit than mainnet
-      // confirmations: 2,    // # of confs to wait between deployments. (default: 0)
-      // timeoutBlocks: 200,  // # of blocks before a deployment times out  (minimum/default: 50)
-      // skipDryRun: true     // Skip dry run before migrations? (default: false for public nets )
-    // },
+    ropsten: {
+      provider: () => TrezorWeb3Provider(
+        `https://ropsten.infura.io/v3/${keys.api}`,
+        "m/44'/1'/0'/0/0", 3
+      ),
+      network_id: 3,       // Ropsten's id
+      gas: 5500000,        // Ropsten has a lower block limit than mainnet
+      gasPrice: 20000000000, // https://ropsten.etherscan.io/chart/gasprice
+      confirmations: 0,    // # of confs to wait between deployments. (default: 0)
+      timeoutBlocks: 10,  // # of blocks before a deployment times out  (minimum/default: 50)
+      skipDryRun: false     // Skip dry run before migrations? (default: false for public nets )
+    },
+
+    // Useful for deploying to a public network.
+    // NB: It's important to wrap the provider as a function.
+    ropsten2: {
+      provider: () => new HDWalletProvider(
+        keys.ropsten2,
+        `https://ropsten.infura.io/v3/${keys.api}`,
+      ),
+      network_id: 3,       // Ropsten's id
+      gas: 5500000,        // Ropsten has a lower block limit than mainnet
+      gasPrice: 20000000000, // https://ropsten.etherscan.io/chart/gasprice
+      confirmations: 0,    // # of confs to wait between deployments. (default: 0)
+      timeoutBlocks: 10,  // # of blocks before a deployment times out  (minimum/default: 50)
+      skipDryRun: false     // Skip dry run before migrations? (default: false for public nets )
+    },
 
     // Useful for private networks
     // private: {
@@ -75,6 +98,19 @@ module.exports = {
       // network_id: 2111,   // This network is yours, in the cloud.
       // production: true    // Treats this network as if it was a public net. (default: false)
     // }
+
+    mainnet: {
+      provider: () => TrezorWeb3Provider(
+        `https://mainnet.infura.io/v3/${keys.api}`,
+        "m/44'/60'/0'/0/0", 0
+      ),
+      network_id: 0,         // Mainnet's id
+      gas: 5500000,          // Ropsten has a lower block limit than mainnet
+      gasPrice: 5000000000,  // 5 Gwei
+      confirmations: 2,      // # of confs to wait between deployments. (default: 0)
+      timeoutBlocks: 200,    // # of blocks before a deployment times out  (minimum/default: 50)
+      skipDryRun: false      // Skip dry run before migrations? (default: false for public nets )
+    }
   },
 
   // Set default mocha options here, use special reporters etc.

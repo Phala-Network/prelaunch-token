@@ -1,0 +1,32 @@
+{
+  "name": "@daonomic/trezor-wallet-provider",
+  "version": "0.0.10",
+  "description": "Trezor-enabled subprovider for Provider Engine",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/daonomic/trezor-wallet-provider.git"
+  },
+  "keywords": [
+    "ethereum",
+    "trezor",
+    "wallet",
+    "provider"
+  ],
+  "author": "0v1se <dev@0v1se.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/daonomic/trezor-wallet-provider/issues"
+  },
+  "homepage": "https://github.com/daonomic/trezor-wallet-provider#readme",
+  "dependencies": {
+    "bip32-path": "^0.4.2",
+    "child_process": "1.0.2",
+    "trezor-connect": "8.1.0-beta.2",
+    "trezor.js": "6.19.2",
+    "web3-provider-engine": "https://github.com/trufflesuite/provider-engine#web3-one"
+  }
+}

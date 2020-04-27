@@ -182,5 +182,8 @@ class TrezorProvider extends HookedWalletSubprovider {
     }
 }
 
-module.exports = TrezorProvider;
+module.exports = {
+    TrezorProvider,
+    Trezor
+};
 

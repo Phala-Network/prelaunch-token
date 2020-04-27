@@ -65,7 +65,7 @@ module.exports = {
     // Useful for deploying to a public network.
     // NB: It's important to wrap the provider as a function.
     ropsten: {
-      provider: () => TrezorWeb3Provider(
+      provider: () => new TrezorWeb3Provider(
         `https://ropsten.infura.io/v3/${keys.api}`,
         "m/44'/1'/0'/0/0", 3
       ),

@@ -25,6 +25,7 @@
   "dependencies": {
     "bip32-path": "^0.4.2",
     "child_process": "1.0.2",
+    "ethereumjs-tx": "^2.1.2",
     "trezor-connect": "8.1.0-beta.2",
     "trezor.js": "6.19.2",
     "web3-provider-engine": "https://github.com/trufflesuite/provider-engine#web3-one"

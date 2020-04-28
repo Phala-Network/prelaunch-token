@@ -25,7 +25,7 @@
 // const mnemonic = fs.readFileSync(".secret").toString().trim();
 
 const HDWalletProvider = require("@truffle/hdwallet-provider");
-const TrezorWeb3Provider = require("@daonomic/trezor-web3-provider");
+// const TrezorProvider = require("@phala/trezor-provider");
 const keys = require('./keys');
 
 module.exports = {
@@ -64,18 +64,18 @@ module.exports = {
 
     // Useful for deploying to a public network.
     // NB: It's important to wrap the provider as a function.
-    ropsten: {
-      provider: () => new TrezorWeb3Provider(
-        `https://ropsten.infura.io/v3/${keys.api}`,
-        "m/44'/1'/0'/0/0", 3
-      ),
-      network_id: 3,       // Ropsten's id
-      gas: 5500000,        // Ropsten has a lower block limit than mainnet
-      gasPrice: 20000000000, // https://ropsten.etherscan.io/chart/gasprice
-      confirmations: 0,    // # of confs to wait between deployments. (default: 0)
-      timeoutBlocks: 10,  // # of blocks before a deployment times out  (minimum/default: 50)
-      skipDryRun: false     // Skip dry run before migrations? (default: false for public nets )
-    },
+    // ropsten: {
+    //   provider: () => new TrezorProvider(
+    //     `https://ropsten.infura.io/v3/${keys.api}`,
+    //     "m/44'/1'/0'/0/0", 3
+    //   ),
+    //   network_id: 3,       // Ropsten's id
+    //   gas: 5500000,        // Ropsten has a lower block limit than mainnet
+    //   gasPrice: 20000000000, // https://ropsten.etherscan.io/chart/gasprice
+    //   confirmations: 0,    // # of confs to wait between deployments. (default: 0)
+    //   timeoutBlocks: 10,  // # of blocks before a deployment times out  (minimum/default: 50)
+    //   skipDryRun: false     // Skip dry run before migrations? (default: false for public nets )
+    // },
 
     // Useful for deploying to a public network.
     // NB: It's important to wrap the provider as a function.
@@ -86,10 +86,10 @@ module.exports = {
       ),
       network_id: 3,       // Ropsten's id
       gas: 5500000,        // Ropsten has a lower block limit than mainnet
-      gasPrice: 20000000000, // https://ropsten.etherscan.io/chart/gasprice
+      gasPrice: 40000000000, // https://ropsten.etherscan.io/chart/gasprice
       confirmations: 0,    // # of confs to wait between deployments. (default: 0)
       timeoutBlocks: 10,  // # of blocks before a deployment times out  (minimum/default: 50)
-      skipDryRun: false     // Skip dry run before migrations? (default: false for public nets )
+      skipDryRun: true     // Skip dry run before migrations? (default: false for public nets )
     },
 
     // Useful for private networks

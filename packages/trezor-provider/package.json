@@ -1,5 +1,5 @@
 {
-  "name": "@truffle/hdwallet-provider",
+  "name": "@phala/trezor-provider",
   "description": "HD Wallet-enabled Web3 provider",
   "license": "MIT",
   "author": "Tim Coulter <tim@trufflesuite.com>",
@@ -8,7 +8,7 @@
   "bugs": {
     "url": "https://github.com/trufflesuite/truffle/issues"
   },
-  "version": "2.0.34",
+  "version": "1.0.34",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",

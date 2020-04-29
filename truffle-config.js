@@ -102,7 +102,7 @@ module.exports = {
     mainnet: {
       provider: () => TrezorWeb3Provider(
         `https://mainnet.infura.io/v3/${keys.api}`,
-        "m/44'/60'/0'/0/0", 0
+        0, "m/44'/60'/0'/0/0"
       ),
       network_id: 0,         // Mainnet's id
       gas: 5500000,          // Ropsten has a lower block limit than mainnet

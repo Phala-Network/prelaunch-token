@@ -4,9 +4,8 @@ const TrezorConnect = require('trezor-connect').default;
 const { UI } = require('trezor-connect');
 
 var HookedWalletSubprovider = require('web3-provider-engine/subproviders/hooked-wallet.js');
-var Transaction = require('ethereumjs-tx');
-// var util = require('util');
-var bippath = require('bip32-path')
+var Transaction = require('ethereumjs-tx').Transaction;
+var bippath = require('bip32-path');
 
 var debug = false;
 
@@ -136,6 +135,8 @@ class Trezor {
             v: result.payload.v,
             r: buffer(result.payload.r),
             s: buffer(result.payload.s)
+        }, {
+            chain: this.chainId,
         });
 
         console.log('tx:', tx);

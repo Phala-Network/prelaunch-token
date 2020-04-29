@@ -1,9 +1,4 @@
 import "source-map-support/register";
-import * as bip39 from "bip39";
-import * as EthUtil from "ethereumjs-util";
-import ethJSWallet from "ethereumjs-wallet";
-import EthereumHDKey from "ethereumjs-wallet/hdkey";
-import Transaction from "ethereumjs-tx";
 import ProviderEngine from "web3-provider-engine";
 import FiltersSubprovider from "web3-provider-engine/subproviders/filters";
 import NonceSubProvider from "web3-provider-engine/subproviders/nonce-tracker";
@@ -14,6 +9,9 @@ import Web3 from "web3";
 import { JSONRPCRequestPayload, JSONRPCErrorCallback } from "ethereum-protocol";
 import { Callback, JsonRPCResponse } from "web3/providers";
 
+import { Trezor } from "@daonomic/trezor-wallet-provider";
+
+
 // Important: do not use debug module. Reason: https://github.com/trufflesuite/truffle/issues/2374#issuecomment-536109086
 
 // This line shares nonce state across multiple provider instances. Necessary
@@ -23,28 +21,25 @@ import { Callback, JsonRPCResponse } from "web3/providers";
 // See issue #65 for more
 const singletonNonceSubProvider = new NonceSubProvider();
 
-class HDWalletProvider {
-  private hdwallet?: EthereumHDKey;
+class TrezorProvider {
+  private trezor: any;
   private walletHdpath: string;
-  private wallets: { [address: string]: ethJSWallet };
   private addresses: string[];
 
   public engine: ProviderEngine;
 
   constructor(
-    mnemonic: string | string[],
     provider: string | any,
-    addressIndex: number = 0,
-    numAddresses: number = 10,
+    networkId: number,
+    walletHdpath: string,
     shareNonce: boolean = true,
-    walletHdpath: string = `m/44'/60'/0'/0/`
   ) {
     this.walletHdpath = walletHdpath;
-    this.wallets = {};
     this.addresses = [];
     this.engine = new ProviderEngine();
+    this.trezor = Trezor.init(walletHdpath, networkId);
 
-    if (!HDWalletProvider.isValidProvider(provider)) {
+    if (!TrezorProvider.isValidProvider(provider)) {
       throw new Error(
         [
           `Malformed provider URL: '${provider}'`,
@@ -54,98 +49,34 @@ class HDWalletProvider {
       );
     }
 
-    // private helper to normalize given mnemonic
-    const normalizePrivateKeys = (
-      mnemonic: string | string[]
-    ): string[] | false => {
-      if (Array.isArray(mnemonic)) return mnemonic;
-      else if (mnemonic && !mnemonic.includes(" ")) return [mnemonic];
-      // if truthy, but no spaces in mnemonic
-      else return false; // neither an array nor valid value passed;
-    };
-
-    // private helper to check if given mnemonic uses BIP39 passphrase protection
-    const checkBIP39Mnemonic = (mnemonic: string) => {
-      this.hdwallet = EthereumHDKey.fromMasterSeed(
-        bip39.mnemonicToSeed(mnemonic)
-      );
-
-      if (!bip39.validateMnemonic(mnemonic)) {
-        throw new Error("Mnemonic invalid or undefined");
-      }
-
-      // crank the addresses out
-      for (let i = addressIndex; i < addressIndex + numAddresses; i++) {
-        const wallet = this.hdwallet
-          .derivePath(this.walletHdpath + i)
-          .getWallet();
-        const addr = `0x${wallet.getAddress().toString("hex")}`;
-        this.addresses.push(addr);
-        this.wallets[addr] = wallet;
-      }
-    };
-
-    // private helper leveraging ethUtils to populate wallets/addresses
-    const ethUtilValidation = (privateKeys: string[]) => {
-      // crank the addresses out
-      for (let i = addressIndex; i < privateKeys.length; i++) {
-        const privateKey = Buffer.from(privateKeys[i].replace("0x", ""), "hex");
-        if (EthUtil.isValidPrivate(privateKey)) {
-          const wallet = ethJSWallet.fromPrivateKey(privateKey);
-          const address = wallet.getAddressString();
-          this.addresses.push(address);
-          this.wallets[address] = wallet;
-        }
-      }
-    };
-
-    const privateKeys = normalizePrivateKeys(mnemonic);
-
-    if (!privateKeys) checkBIP39Mnemonic(mnemonic as string);
-    else ethUtilValidation(privateKeys);
-
-    const tmp_accounts = this.addresses;
-    const tmp_wallets = this.wallets;
-
+    const self = this;
     this.engine.addProvider(
       new HookedSubprovider({
-        getAccounts(cb: any) {
-          cb(null, tmp_accounts);
+        async getAccounts(cb: any) {
+					try {
+            const accounts = await self.trezor.getAccounts();
+            self.addresses = accounts;
+						cb(null, accounts);
+					} catch (error) {
+						cb(error);
+					}
         },
         getPrivateKey(address: string, cb: any) {
-          if (!tmp_wallets[address]) {
-            return cb("Account not found");
-          } else {
-            cb(null, tmp_wallets[address].getPrivateKey().toString("hex"));
-          }
+          return cb("Not supported");
         },
-        signTransaction(txParams: any, cb: any) {
-          let pkey;
-          const from = txParams.from.toLowerCase();
-          if (tmp_wallets[from]) {
-            pkey = tmp_wallets[from].getPrivateKey();
-          } else {
-            cb("Account not found");
-          }
-          const tx = new Transaction(txParams);
-          tx.sign(pkey as Buffer);
-          const rawTx = `0x${tx.serialize().toString("hex")}`;
-          cb(null, rawTx);
+        async signTransaction(txParams: any, cb: any) {
+					console.log('#### signTransaction', txParams, cb);
+					try {
+						const rawTx = await self.trezor.signTransaction(txParams);
+						console.log('#### signed:', rawTx, cb);
+						cb(null, rawTx);
+					} catch (error) {
+						console.error('#### error:', error);
+						cb(error);
+					}
         },
         signMessage({ data, from }: any, cb: any) {
-          const dataIfExists = data;
-          if (!dataIfExists) {
-            cb("No data to sign");
-          }
-          if (!tmp_wallets[from]) {
-            cb("Account not found");
-          }
-          let pkey = tmp_wallets[from].getPrivateKey();
-          const dataBuff = EthUtil.toBuffer(dataIfExists);
-          const msgHashBuff = EthUtil.hashPersonalMessage(dataBuff);
-          const sig = EthUtil.ecsign(msgHashBuff, pkey);
-          const rpcSig = EthUtil.toRpcSig(sig.v, sig.r, sig.s);
-          cb(null, rpcSig);
+          cb("Not supported");
         },
         signPersonalMessage(...args: any[]) {
           this.signMessage(...args);
@@ -224,4 +155,4 @@ class HDWalletProvider {
   }
 }
 
-export = HDWalletProvider;
+export = TrezorProvider;

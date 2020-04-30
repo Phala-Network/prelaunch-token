@@ -74,7 +74,8 @@ module.exports = {
       gasPrice: 20000000000, // https://ropsten.etherscan.io/chart/gasprice
       confirmations: 0,    // # of confs to wait between deployments. (default: 0)
       timeoutBlocks: 10,  // # of blocks before a deployment times out  (minimum/default: 50)
-      skipDryRun: true     // Skip dry run before migrations? (default: false for public nets )
+      skipDryRun: true,     // Skip dry run before migrations? (default: false for public nets )
+      networkCheckTimeout: 30000
     },
 
     // Useful for deploying to a public network.
@@ -100,16 +101,17 @@ module.exports = {
     // }
 
     mainnet: {
-      provider: () => TrezorWeb3Provider(
+      provider: () => new TrezorProvider(
         `https://mainnet.infura.io/v3/${keys.api}`,
-        0, "m/44'/60'/0'/0/0"
+        1, "m/44'/60'/0'/0/5"
       ),
-      network_id: 0,         // Mainnet's id
-      gas: 5500000,          // Ropsten has a lower block limit than mainnet
-      gasPrice: 5000000000,  // 5 Gwei
-      confirmations: 2,      // # of confs to wait between deployments. (default: 0)
-      timeoutBlocks: 200,    // # of blocks before a deployment times out  (minimum/default: 50)
-      skipDryRun: false      // Skip dry run before migrations? (default: false for public nets )
+      network_id: 1,         // Mainnet's id
+      gas: 5500000,
+      gasPrice: 15_000_000_000,  // 15 Gwei
+      confirmations: 0,      // # of confs to wait between deployments. (default: 0)
+      timeoutBlocks: 100,    // # of blocks before a deployment times out  (minimum/default: 50)
+      skipDryRun: true,      // Skip dry run before migrations? (default: false for public nets )
+      networkCheckTimeout: 30000
     }
   },
 

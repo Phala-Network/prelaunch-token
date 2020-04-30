@@ -5,37 +5,41 @@ import "@openzeppelin/contracts/token/ERC20/ERC20Detailed.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "@openzeppelin/contracts/lifecycle/Pausable.sol";
 
-contract PHAToken is ERC20, ERC20Detailed, Pausable, Ownable {
+contract OwnedPausalbe is Pausable, Ownable {
+    modifier onlyOwnerOrNotPaused() {
+        if (!isOwner()) {
+            require(!paused(), "Pausable: paused");
+        }
+        _;
+    }
+}
+
+contract PHAToken is ERC20, ERC20Detailed, OwnedPausalbe {
     constructor(uint256 initialSupply) ERC20Detailed("Phala", "PHA", 18) public {
         _mint(msg.sender, initialSupply);
         pause();
     }
 
-    // Taken from ERC20Pausable
-
-    function transfer(address to, uint256 value) public whenNotPaused returns (bool) {
+    function transfer(address to, uint256 value) public onlyOwnerOrNotPaused returns (bool) {
         return super.transfer(to, value);
     }
 
-    function transferFrom(address from, address to, uint256 value) public whenNotPaused returns (bool) {
+    function transferFrom(address from, address to, uint256 value) public returns (bool) {
+        if (from != owner()) {
+            require(!paused(), "Pausable: paused");
+        }
         return super.transferFrom(from, to, value);
     }
 
-    function approve(address spender, uint256 value) public whenNotPaused returns (bool) {
+    function approve(address spender, uint256 value) public onlyOwnerOrNotPaused returns (bool) {
         return super.approve(spender, value);
     }
 
-    function increaseAllowance(address spender, uint256 addedValue) public whenNotPaused returns (bool) {
+    function increaseAllowance(address spender, uint256 addedValue) public onlyOwnerOrNotPaused returns (bool) {
         return super.increaseAllowance(spender, addedValue);
     }
 
-    function decreaseAllowance(address spender, uint256 subtractedValue) public whenNotPaused returns (bool) {
+    function decreaseAllowance(address spender, uint256 subtractedValue) public onlyOwnerOrNotPaused returns (bool) {
         return super.decreaseAllowance(spender, subtractedValue);
-    }
-
-    // Admin methods
-
-    function ownerTransfer(address to, uint256 value) public onlyOwner returns (bool) {
-        return super.transfer(to, value);
     }
 }

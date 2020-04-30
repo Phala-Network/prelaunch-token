@@ -24,7 +24,6 @@ contract('PHA', accounts => {
   });
 
   it('should send 1 PHA to accounts[1]', async () => {
-    console.log(await pha.paused());
     await pha.transfer(accounts[1], UNIT);
     const balance = await pha.balanceOf(accounts[0]);
     assert(balance.eq(SUPPLY.sub(UNIT)), 'Bad balance');
@@ -34,7 +33,9 @@ contract('PHA', accounts => {
     // Can't transfer when paused
     await pha.pause();
     assert.equal(await pha.paused(), true, 'Should be paused');
-    await truffleAssert.reverts(pha.transfer(accounts[1], UNIT), 'Pausable: paused');
+    await truffleAssert.reverts(
+      pha.transfer(accounts[1], UNIT, {from: accounts[1]}),
+      'Pausable: paused');
     await pha.unpause();
     // Can transfer when unpaused
     const balanceBefore = await pha.balanceOf(accounts[0]);
@@ -46,17 +47,38 @@ contract('PHA', accounts => {
   it('should allow the owner to transfer when puased', async () => {
     await pha.pause();
     const balanceBefore = await pha.balanceOf(accounts[0]);
-    await pha.ownerTransfer(accounts[1], UNIT);
+    await pha.transfer(accounts[1], UNIT);
     const balanceAfter = await pha.balanceOf(accounts[0]);
     assert(balanceBefore.sub(UNIT).eq(balanceAfter), 'Balance should change');
     await pha.unpause();
   });
 
-  it('should reject non-owner\'s call to ownerTransfer', async () => {
+  it('should reject non-owner\'s call to transferOwnership', async () => {
     await truffleAssert.reverts(
-      pha.ownerTransfer(accounts[0], UNIT, {from: accounts[1]}),
+      pha.transferOwnership(accounts[2], {from: accounts[1]}),
       'Ownable: caller is not the owner.'
     );
+  });
+
+  it('should allow 3rd party to transfer from the owner with allowance', async () => {
+    await pha.transfer(accounts[1], UNIT.muln(100));
+    await pha.pause();
+    await pha.approve(accounts[2], UNIT);
+    const balanceBefore = await pha.balanceOf(accounts[0]);
+    await pha.transferFrom(accounts[0], accounts[1], UNIT, {from: accounts[2]});
+    const balanceAfter = await pha.balanceOf(accounts[0]);
+    assert(balanceBefore.sub(UNIT).eq(balanceAfter), 'Balance should change');
+    await pha.unpause();
+  });
+
+  it('should reject tranfer from any non-owner accounts when paused', async () => {
+    await pha.transfer(accounts[1], UNIT.muln(100));
+    await pha.approve(accounts[2], UNIT, {from: accounts[1]});
+    await pha.pause();
+    await truffleAssert.reverts(
+      pha.transferFrom(accounts[1], accounts[2], UNIT, {from: accounts[2]}),
+      'Pausable: paused');
+    await pha.unpause();
   });
 
 });

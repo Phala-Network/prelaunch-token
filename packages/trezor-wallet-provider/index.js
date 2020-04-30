@@ -123,7 +123,9 @@ class Trezor {
             }
         });
 
-        console.log('signed:', result);
+        if (debug) {
+            console.log('signed:', result);
+        }
         
         const tx = new Transaction({
             nonce: buffer(txParams.nonce),
@@ -139,7 +141,9 @@ class Trezor {
             chain: this.chainId,
         });
 
-        console.log('tx:', tx);
+        if (debug) {
+            console.log('tx:', tx);
+        }
         return '0x' + tx.serialize().toString('hex');
     }
 
@@ -167,15 +171,12 @@ class TrezorProvider extends HookedWalletSubprovider {
                 }
             },
             signTransaction: async function(txParams, cb) {
-                console.log('#### signTransaction', txParams, cb);
                 try {
                     const tx = await trezor.signTransaction(txParams);
-                    console.log('#### signed:', tx);
                     console.log(cb);
                     if (cb) cb(null, tx);
                     return tx;
                 } catch (error) {
-                    console.error('#### error:', error);
                     if (cb) cb(error);
                 }
             }

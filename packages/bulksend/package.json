@@ -1,0 +1,11 @@
+{
+  "name": "@phala/bulksend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "@phala/trezor-provider": "1.0.34",
+    "csv-parse": "^4.10.1",
+    "web3": "1.2.4"
+  }
+}

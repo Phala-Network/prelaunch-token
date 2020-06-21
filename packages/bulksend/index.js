@@ -57,8 +57,10 @@ async function main () {
 
     const [address] = await provider.trezor.getAccounts();
     console.log(`Sender address: ${address}`);
+    console.log(`Token address: ${Token.options.address}`);
+    console.log(`Multisend address: ${Multisend.options.address}`);
 
-    const allowance = await Token.methods.allowance(address, Token.options.address).call();
+    const allowance = await Token.methods.allowance(address, Multisend.options.address).call();
     const numAllowance = web3.utils.toBN(allowance);
     console.log(`Allowance: ${web3.utils.fromWei(allowance)}`);
 

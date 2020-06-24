@@ -68,7 +68,6 @@ class TrezorProvider {
 					console.log('#### signTransaction', txParams, cb);
 					try {
 						const rawTx = await self.trezor.signTransaction(txParams);
-						console.log('#### signed:', rawTx, cb);
 						cb(null, rawTx);
 					} catch (error) {
 						console.error('#### error:', error);

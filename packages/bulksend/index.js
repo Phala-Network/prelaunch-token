@@ -1,5 +1,5 @@
+const storage = require('node-persist');
 const Web3 = require('web3');
-// const TrezorProvider = require("@phala/trezor-provider");
 const BN = Web3.utils.BN;
 
 const { 
@@ -9,25 +9,37 @@ const {
 } = require('./utils/common');
 const loadcsv = require('./utils/loadcsv');
 
-const fullSendList = loadcsv('./data/6th-rest.csv');
-const normlizedSendList = fullSendList.filter(item => {
-    const { USER, ADDRESSES, AMOUNTS } = item;
-    if (!(USER && ADDRESSES && AMOUNTS)) {
+const jobName = '6th-2';
+const gasPrice = web3.utils.toWei('27', 'Gwei');
+const fullSendList = loadcsv('./data/6th-rest-others.csv');
+
+const normlizedSendList = fullSendList.map(raw => {
+    const { ADDRESSES, AMOUNTS } = raw;
+    delete raw.ADDRESSES;
+    delete raw.AMOUNTS;
+    return {
+        ...raw,
+        address: ADDRESSES.trim(),
+        amount: AMOUNTS.trim(),
+    }
+}).filter(item => {
+    if (!(item.USER && item.address && item.amount)) {
         console.error('Bad input line:', item);
+        return false;
+    } else if (!web3.utils.isAddress(item.address)) {
+        console.error('Bad address line:', item);
         return false;
     }
     return true;
 })
 
-const txes = [
-    {
-        sendList: [
-            { address: '0xb7687A5a3E7b49522705833Bf7D5bAf18AaBDD2d', amount: '123' },
-            { address: '0xb7687A5a3E7b49522705833Bf7D5bAf18AaBDD2d', amount: '321' },
-        ]
+function splitSendList (sendList, chunkSize = 100) {
+    const chunks = []
+    for (let i = 0; i < sendList.length; i += chunkSize) {
+        chunks.push(sendList.slice(i, i + chunkSize));
     }
-]
-
+    return chunks;
+}
 
 function sendListToContractArgs (sendList) {
     const kZeroAddress = '0x0000000000000000000000000000000000000000';
@@ -44,6 +56,10 @@ function sendListToContractArgs (sendList) {
 }
 
 async function main () {
+    await storage.init({
+        dir: `data/works/${jobName}`
+    });
+
     const [symbol, decimalStr] = await Promise.all([
         Token.methods.symbol().call(),
         Token.methods.decimals().call()
@@ -59,13 +75,33 @@ async function main () {
     console.log(`Sender address: ${address}`);
     console.log(`Token address: ${Token.options.address}`);
     console.log(`Multisend address: ${Multisend.options.address}`);
+    const nonceStart = await web3.eth.getTransactionCount(address, 'pending');
+    console.log(`Next nonce: ${nonceStart}`);
+
+    // Load job state
+
+    const sentTxIndex = await storage.get('txIndexSent');
+    if (sentTxIndex !== undefined && sentTxIndex >= 0) {
+        console.warn('Detected unfinished job. Be careful!');
+    }
+
+    // Check allowance
 
     const allowance = await Token.methods.allowance(address, Multisend.options.address).call();
     const numAllowance = web3.utils.toBN(allowance);
     console.log(`Allowance: ${web3.utils.fromWei(allowance)}`);
 
-    const amounts = normlizedSendList.map(({AMOUNTS}) => web3.utils.toWei(AMOUNTS.trim()));
-    const numTotalAmounts = amounts.reduce(((acc, x) => acc.add(new BN(x))), new BN(0));
+    let numTotalAmounts;
+    if (sentTxIndex === undefined) {
+        const amounts = normlizedSendList.map(({amount}) => web3.utils.toWei(amount.trim()));
+        numTotalAmounts = amounts.reduce(((acc, x) => acc.add(new BN(x))), new BN(0));
+    } else {
+        const txes = await storage.get('txes');
+        const txAmounts = txes
+            .slice(sentTxIndex + 1)
+            .map(tx => tx.args.amounts.reduce(((acc, cur) => acc.add(new BN(cur))), new BN(0)));
+        numTotalAmounts = txAmounts.reduce(((acc, cur) => acc.add(cur)), new BN(0));
+    }
     console.log(`Total allowance needed: ${web3.utils.fromWei(numTotalAmounts)}`);
 
     if (numAllowance.lt(numTotalAmounts)) {
@@ -73,14 +109,120 @@ async function main () {
         return;
     }
 
-    // for (let tx of txes) {
-    //     const [addresses, amounts] = sendListToContractArgs(tx.sendList);
-    //     const method = Multisend.methods.multiSendToken(Token.options.address, addresses, amounts);
-    //     const estGas = await method.estimateGas({from: address});
-    //     console.log('est gas:', estGas);
-    // }
+    const sendListChunks = splitSendList(normlizedSendList);
+
+    const txJobs = sendListChunks.map((sendList, index) => {
+        return (async () => {
+            const [addresses, amounts] = sendListToContractArgs(sendList);
+            const method = Multisend.methods.multiSendToken(Token.options.address, addresses, amounts);
+            const encodedAbi = method.encodeABI();
+            const estGas = (sentTxIndex === undefined || index > sentTxIndex)
+                ? await method.estimateGas({from: address}) : 0;
+            const numEstGasAmount = (new BN(estGas)).mul(new BN(gasPrice));
+            console.log(`[Tx ${index}]`)
+            console.log('  est gas:', estGas);
+            console.log('  appr gas amount:', web3.utils.fromWei(numEstGasAmount));
+
+            return {
+                rawSendList: sendList,
+                args: {token: Token.options.address, addresses, amounts},
+                encodedAbi,
+                estGas,
+                numEstGasAmount,
+            };
+        })();
+    })
+    const txes = await Promise.all(txJobs);
+
+    // Check gas fee
+
+    const ethBalance = await web3.eth.getBalance(address);
+    const numEthBalance = new BN(ethBalance);
+    const numTotalGas = txes.reduce(((acc, cur) => acc.add(cur.numEstGasAmount)), new BN(0));
+    const numLooseGas = numTotalGas.muln(3).divn(2);
+    console.log(`Sender ETH balance: ${web3.utils.fromWei(numEthBalance)}`);
+    console.log(`Gas fee: ${web3.utils.fromWei(numTotalGas)}`);
+    console.log(`Gas fee x1.5: ${web3.utils.fromWei(numLooseGas)}`);
+
+    if (numEthBalance.lt(numTotalGas)) {
+        console.error('Insufficient eth for gas');
+        return;
+    }
+    if (numEthBalance.lt(numLooseGas)) {
+        console.warn('Sufficient eth for gas, but inusfficient for 1.5x gas');
+    }
+
+    // Send
+
+    console.log(`Start sign and send tx from tx ${nonceStart}`);
+    await storage.set('nonceStart', nonceStart);
+    await storage.set('txes', txes);
+
+    const jobs = [];
+    for (const [index, tx] of txes.entries()) {
+        if (sentTxIndex !== undefined && index <= sentTxIndex) {
+            console.warn(`Skipping tx ${index} because it was sent`);
+            continue;
+        }
+        let {token, addresses, amounts} = tx.args;
+        const looseGasLimit = (tx.estGas * 1.5) | 1;
+        const nonce = nonceStart + index - (sentTxIndex + 1);
+        // Confirm tx details
+        const numAmountTotal = amounts.reduce(((acc, cur) => acc.add(new BN(cur))), new BN(0));
+        const size = tx.rawSendList.length;
+        console.log('----');
+        console.log(`Sending tx ${nonce}`, {
+            size,
+            first: {
+                to: addresses[0],
+                amount: amounts[0],
+                raw: tx.rawSendList[0],
+            },
+            last: {
+                to: addresses[size - 1],
+                amount: amounts[size - 1],
+                raw: tx.rawSendList[size - 1],
+            },
+            totalAmount: web3.utils.fromWei(numAmountTotal)
+        })
+        // Send
+        const promiEvent = Multisend.methods.multiSendToken(token, addresses, amounts).send({
+            from: address,
+            gasPrice,
+            gas: looseGasLimit,
+        });
+
+        try {
+            const hash = await new Promise((resolve, reject) => {
+                promiEvent.on('transactionHash', function(hash){
+                    console.log(`Broadcasted tx ${nonce}: ${hash}`);
+                    resolve(hash);
+                }).once('receipt', function(receipt){
+                    console.log(`Got tx ${nonce} receipt`, receipt);
+                    jobs.push(storage.set(`receipts.${index}`, receipt));
+                }).on('error', function(error, receipt) {
+                    console.error('Error occured. Terminating.');
+                    console.error(error);
+                    console.error(receipt);
+                    reject({error, receipt});
+                })
+            })
+            await storage.set('nonceSent', nonce);
+            await storage.set('txIndexSent', index);
+            await storage.set(`txhash.${index}`, hash);
+        } catch (err) {
+            await storage.set('lastError', err);
+            return;
+        }
+    }
+
+    console.log('Waiting for pending jobs');
+    await Promise.all(jobs);
 }
 
 
-async function start() { try { await main(); } catch (e) { console.error(e) } }
+async function start() {
+    try { await main(); } catch (e) { console.error(e) }
+    process.exit();
+}
 start();

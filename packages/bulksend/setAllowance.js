@@ -1,3 +1,10 @@
+const { program } = require('commander');
+program.version('0.0.1');
+program
+    .option('-a, --amount <string>', 'Amount in fi (BN)', '10000000000000000000000')  // 10k unit
+    .option('-g, --gas <number>', 'Gas fee in Gwei', 30);
+program.parse(process.argv);
+
 const { 
     phaAddress, keys,
     provider, web3,
@@ -10,16 +17,17 @@ async function main() {
 
     const allowance = await Token.methods.allowance(address, Token.options.address).call();
     const numAllowance = web3.utils.toBN(allowance);
-    console.log(`Allowance: ${web3.utils.fromWei(allowance)}`);
+    console.log(`Current allowance: ${web3.utils.fromWei(allowance)}`);
 
-    const numTargetAllowance = web3.utils.toBN('39769960000000000000000');
-    const gasPriceGwei = 30;
+    const numTargetAllowance = web3.utils.toBN(program.amount);
+    const gasPriceGwei = program.gas;
 
     if (numAllowance.gte(numTargetAllowance)) {
         console.log(`Sufficient allowance (${numAllowance.toNumber()} >= ${numTargetAllowance.toNumber()})`);
         return;
     }
 
+    console.log(`Trying to set allowance to: ${web3.utils.fromWei(numTargetAllowance)}`);
     await Token.methods.approve(Multisend.options.address, numTargetAllowance.toString()).send({
         from: address,
         gasPrice: web3.utils.toWei(gasPriceGwei.toString(), 'Gwei'),

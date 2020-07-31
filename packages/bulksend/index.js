@@ -1,3 +1,11 @@
+const { program } = require('commander');
+program.version('0.0.1');
+program
+    .option('-j, --job <string>', 'Job name, will be used to create database at "data/works/<job>"', 'job1')
+    .option('-f, --file <string>', 'Input CSV file path (must have ADDRESSES and AMOUNTS)', 'data/job1.csv')
+    .option('-g, --gas <number>', 'Gas fee in Gwei', 30);
+program.parse(process.argv);
+
 const storage = require('node-persist');
 const Web3 = require('web3');
 const BN = Web3.utils.BN;
@@ -9,9 +17,9 @@ const {
 } = require('./utils/common');
 const loadcsv = require('./utils/loadcsv');
 
-const jobName = '6th-2';
-const gasPrice = web3.utils.toWei('27', 'Gwei');
-const fullSendList = loadcsv('./data/6th-rest-others.csv');
+const jobName = program.job;
+const gasPrice = web3.utils.toWei(program.gas.toString(), 'Gwei');
+const fullSendList = loadcsv(program.file);
 
 const normlizedSendList = fullSendList.map(raw => {
     const { ADDRESSES, AMOUNTS } = raw;
@@ -23,7 +31,7 @@ const normlizedSendList = fullSendList.map(raw => {
         amount: AMOUNTS.trim(),
     }
 }).filter(item => {
-    if (!(item.USER && item.address && item.amount)) {
+    if (!(item.address && item.amount)) {
         console.error('Bad input line:', item);
         return false;
     } else if (!web3.utils.isAddress(item.address)) {
@@ -105,7 +113,8 @@ async function main () {
     console.log(`Total allowance needed: ${web3.utils.fromWei(numTotalAmounts)}`);
 
     if (numAllowance.lt(numTotalAmounts)) {
-        console.error(`Insufficient allowance. Needed: ${numTotalAmounts.toString()}`)
+        console.error(`Insufficient allowance. Needed: ${numTotalAmounts.toString()}`);
+        console.error(`  node setAllowance.js --amount ${numTotalAmounts.toString()} --gas 30`);
         return;
     }
 
@@ -166,7 +175,8 @@ async function main () {
         }
         let {token, addresses, amounts} = tx.args;
         const looseGasLimit = (tx.estGas * 1.5) | 1;
-        const nonce = nonceStart + index - (sentTxIndex + 1);
+        const sentTxes = (sentTxIndex === undefined) ? 0 : sentTxIndex + 1;
+        const nonce = nonceStart + index - sentTxes;
         // Confirm tx details
         const numAmountTotal = amounts.reduce(((acc, cur) => acc.add(new BN(cur))), new BN(0));
         const size = tx.rawSendList.length;

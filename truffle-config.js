@@ -80,14 +80,14 @@ module.exports = {
 
     // Useful for deploying to a public network.
     // NB: It's important to wrap the provider as a function.
-    ropsten2: {
+    kovan: {
       provider: () => new HDWalletProvider(
-        keys.ropsten2,
-        `https://ropsten.infura.io/v3/${keys.api}`,
+        keys.kovan,
+        `https://kovan.infura.io/v3/${keys.api}`,
       ),
-      network_id: 3,       // Ropsten's id
-      gas: 5500000,        // Ropsten has a lower block limit than mainnet
-      gasPrice: 40000000000, // https://ropsten.etherscan.io/chart/gasprice
+      network_id: 42,       // Kovan's id
+      gas: 5500000,
+      gasPrice: 40000000000, // https://kovan.etherscan.io/chart/gasprice
       confirmations: 0,    // # of confs to wait between deployments. (default: 0)
       timeoutBlocks: 10,  // # of blocks before a deployment times out  (minimum/default: 50)
       skipDryRun: true     // Skip dry run before migrations? (default: false for public nets )
@@ -106,8 +106,8 @@ module.exports = {
         1, "m/44'/60'/0'/0/5"
       ),
       network_id: 1,         // Mainnet's id
-      gas: 5500000,
-      gasPrice: 15_000_000_000,  // 15 Gwei
+      gas: 70000,            // A tight gas limit, original 5500000
+      gasPrice: 130_000_000_000,  // 130 Gwei
       confirmations: 0,      // # of confs to wait between deployments. (default: 0)
       timeoutBlocks: 100,    // # of blocks before a deployment times out  (minimum/default: 50)
       skipDryRun: true,      // Skip dry run before migrations? (default: false for public nets )

@@ -1,9 +1,9 @@
 import React, { useEffect, Suspense, useState, useMemo } from 'react';
-import { ZeitProvider, CssBaseline, Button, Card, Description, Link, Page, Radio, Row, Text, useMediaQuery} from '@zeit-ui/react'
-import * as Icon from '@zeit-ui/react-icons'
+import { GeistProvider, CssBaseline, Button, Card, Description, Link, Page, Radio, Row, Text, useMediaQuery } from '@geist-ui/react'
+import * as Icon from '@geist-ui/react-icons'
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
-import '@zeit-ui/themes/index.css'
+// import '@zeit-ui/themes/index.css'
 import { combineProofs } from '@phala/merkledrop-lib';
 
 import Web3 from "web3";
@@ -287,7 +287,6 @@ function App() {
                       {t('Claim')}
                   </Button>
                 </Row>
-                <Text span size="12px" type="secondary">{t('Will not take effect if already claimed')}</Text>
               </section>
 
               {showSentTips && (
@@ -318,19 +317,8 @@ function App() {
   );
 }
 
-function DecorateApp () {
-  return (
-    <Suspense fallback={<Loading />}>
-      <ZeitProvider theme={myTheme}>
-        <CssBaseline />
-        <App />
-      </ZeitProvider>
-    </Suspense>
-  );
-}
-
 const myTheme = {
-  "type": "dark",
+  // "type": "dark",
   "palette": {
     "accents_1": "#111",
     "accents_2": "#333",
@@ -342,11 +330,14 @@ const myTheme = {
     "accents_8": "#fafafa",
     "background": "#000",
     "foreground": "#fff",
-    "selection": "#f81ce5",
+    "selection": "#D1FF52",
     "secondary": "#888",
+    "success": "#D1FF52",
+    "successLight": "#D1FF52",
+    "successDark": "#D1FF52",
     "code": "#79ffe1",
     "border": "#333",
-    "link": "#d2fe53"
+    "link": "#D1FF52"
   },
   "expressiveness": {
     "dropdownBoxShadow": "0 0 0 1px #333",
@@ -356,5 +347,16 @@ const myTheme = {
     "portalOpacity": 0.75
   }
 };
+
+function DecorateApp () {
+  return (
+    <GeistProvider theme={myTheme}>
+      <CssBaseline />
+      <Suspense fallback={<Loading />}>
+        <App />
+      </Suspense>
+    </GeistProvider>
+  );
+}
 
 export default DecorateApp;

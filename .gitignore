@@ -7,3 +7,4 @@ keys.js
 .DS_Store
 packages/bulksend/data
 tmp/
+.env

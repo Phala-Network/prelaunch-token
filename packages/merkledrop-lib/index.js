@@ -16,4 +16,18 @@ function combineProofs(proofs) {
     return {combinedProof, proofLengths};
 }
 
-module.exports = {merklize, combineProofs};
+function toMaterializable(merklizedSetup) {
+    return {
+        root: merklizedSetup.root,
+        awards: merklizedSetup.awards.map(a => {
+            return {
+                address: a.address,
+                amount: a.amount,
+                amountWei: a.amountBN.toString(),
+                proof: a.proof
+            }
+        })
+    };
+}
+
+module.exports = {merklize, combineProofs, toMaterializable};

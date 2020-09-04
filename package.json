@@ -6,6 +6,7 @@
   "dependencies": {
     "@openzeppelin/contracts": "^2.5.0",
     "@phala/trezor-provider": "^1.0.34",
+    "@phala/merkledrop-lib": "^1.0.0",
     "@truffle/hdwallet-provider": "^1.0.34",
     "truffle-assertions": "^0.9.2",
     "truffle-plugin-verify": "^0.3.10"

@@ -1,0 +1,11 @@
+{
+  "name": "@phala/merkledrop-lib",
+  "version": "1.0.0",
+  "license": "MIT",
+  "main": "index.js",
+  "dependencies": {
+    "bn.js": "^5.1.3",
+    "ethereumjs-util": "^7.0.4",
+    "merkle-tree-solidity": "^1.0.8"
+  }
+}

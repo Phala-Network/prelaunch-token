@@ -9,11 +9,13 @@ contract MerkleAirdrop is Ownable {
     struct Airdrop {
       bytes32 root;
       string dataURI;
+      bool paused;
       mapping(address => bool) awarded;
     }
 
     /// Events
     event Start(uint id);
+    event PauseChange(uint id, bool paused);
     event Award(uint id, address recipient, uint amount);
 
     /// State
@@ -25,6 +27,7 @@ contract MerkleAirdrop is Ownable {
     // Errors
     string private constant ERROR_AWARDED = "AWARDED";
     string private constant ERROR_INVALID = "INVALID";
+    string private constant ERROR_PAUSED = "PAUSED";
 
     function setToken(address _token, address _approver) public onlyOwner {
         token = IERC20(_token);
@@ -38,10 +41,20 @@ contract MerkleAirdrop is Ownable {
      */
     function start(bytes32 _root, string memory _dataURI) public onlyOwner {
         uint id = ++airdropsCount;    // start at 1
-        airdrops[id] = Airdrop(_root, _dataURI);
+        airdrops[id] = Airdrop(_root, _dataURI, false);
         emit Start(id);
     }
 
+    /**
+     * @notice Pause or resume an airdrop `_id` / `_paused`
+     * @param _id The airdrop to change status
+     * @param _paused Pause to resume
+     */
+    function setPause(uint _id, bool _paused) public onlyOwner {
+        require(_id <= airdropsCount, ERROR_INVALID);
+        airdrops[_id].paused = _paused;
+        emit PauseChange(_id, _paused);
+    }
 
     /**
      * @notice Award from airdrop
@@ -51,7 +64,10 @@ contract MerkleAirdrop is Ownable {
      * @param _proof Merkle proof to correspond to data supplied
      */
     function award(uint _id, address _recipient, uint256 _amount, bytes32[] memory _proof) public {
+        require( _id <= airdropsCount, ERROR_INVALID );
+
         Airdrop storage airdrop = airdrops[_id];
+        require( !airdrop.paused, ERROR_PAUSED );
 
         bytes32 hash = keccak256(abi.encodePacked(_recipient, _amount));
         require( validate(airdrop.root, _proof, hash), ERROR_INVALID );
@@ -80,6 +96,8 @@ contract MerkleAirdrop is Ownable {
 
         for (uint i = 0; i < _ids.length; i++) {
             uint id = _ids[i];
+            require( id <= airdropsCount, ERROR_INVALID );
+            require( !airdrops[id].paused, ERROR_PAUSED );
 
             bytes32[] memory proof = extractProof(_proofs, marker, _proofLengths[i]);
             marker += _proofLengths[i]*32;
@@ -98,41 +116,6 @@ contract MerkleAirdrop is Ownable {
 
         token.transferFrom(approver, _recipient, totalAmount);
     }
-
-    // /**
-    //  * @notice Award from airdrop
-    //  * @param _id Airdrop ids
-    //  * @param _recipients Recepients of award
-    //  * @param _amounts The amounts
-    //  * @param _proofs Merkle proofs
-    //  * @param _proofLengths Merkle proof lengths
-    //  */
-    // function awardToMany(uint _id, address[] memory _recipients, uint[] memory _amounts, bytes memory _proofs, uint[] memory _proofLengths) public {
-    //     uint marker = 32;
-
-    //     for (uint i = 0; i < _recipients.length; i++) {
-    //         address recipient = _recipients[i];
-
-    //         if( recipient == address(0) )
-    //             continue;
-
-    //         if( airdrops[_id].awarded[recipient] )
-    //             continue;
-
-    //         airdrops[_id].awarded[recipient] = true;
-
-    //         bytes32[] memory proof = extractProof(_proofs, marker, _proofLengths[i]);
-    //         marker += _proofLengths[i]*32;
-
-    //         bytes32 hash = keccak256(abi.encodePacked(recipient, _amounts[i]));
-    //         if( !validate(airdrops[_id].root, proof, hash) )
-    //             continue;
-
-    //         token.transferFrom(approver, recipient, _amounts[i]);
-
-    //         emit Award(_id, recipient, _amounts[i]);
-    //     }
-    // }
 
     function extractProof(bytes memory _proofs, uint _marker, uint proofLength) public pure returns (bytes32[] memory proof) {
 

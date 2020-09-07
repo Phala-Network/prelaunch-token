@@ -44,7 +44,7 @@ contract('MerkleAirdrop', accounts => {
     });
 
     it('allows users to claim airdrop', async () => {
-        for (let i = 0; i < testData.length; i++) {
+        for (let i = 0; i < testData.length - 1; i++) {
             const award = testSetup.awards[i];
             const address = accounts[i+1];
             await drop.award(1, address, award.amountBN.toString(), award.proof);
@@ -78,6 +78,22 @@ contract('MerkleAirdrop', accounts => {
 
         const balanceBN = await pha.balanceOf(accounts[4]);
         assert(balanceBN.eq(bn1e18.muln(2)), 'Wrong amount from airdrop');
+    });
+
+    it('refuses to claim when paused', async () => {
+        await drop.setPause(1, true);
+
+        const award = testSetup.awards[2];
+        const address = accounts[3];
+        await truffleAssert.reverts(
+            drop.award(1, address, award.amountBN.toString(), award.proof),
+            "PAUSED"
+        );
+
+        await drop.setPause(1, false);
+        await drop.award(1, address, award.amountBN.toString(), award.proof);
+        const received = await pha.balanceOf(address);
+        assert(received.toString() == award.amountBN.toString());
     });
 
 });

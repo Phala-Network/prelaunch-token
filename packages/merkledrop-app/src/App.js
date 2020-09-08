@@ -48,17 +48,24 @@ async function getAirdropPlan(uri) {
 }
 
 async function getAirdropLists(contract) {
+  console.log('### 1');
   const numAirdrop = await contract.methods.airdropsCount().call();
   const uriPromises = []
+  console.log('### 2');
   for (let i = 1; i <= numAirdrop; i++) {
     uriPromises.push(contract.methods.airdrops(i).call());
   }
   const airdrops = await Promise.all(uriPromises);
   console.log('airdrops', airdrops);
   const plans = await Promise.all(
-    airdrops.map(a => getAirdropPlan(a.dataURI)));
-  console.log('plans', plans);
-  return plans;
+    airdrops.map(a => getAirdropPlan(a.dataURI))
+  );
+  const plansWithStatus = plans.map((a, idx) => {
+    return {...a, paused: airdrops[idx].paused};
+  });
+
+  console.log('plans', plansWithStatus);
+  return plansWithStatus;
 }
 
 async function checkAwarded(contract, id, address) {
@@ -101,6 +108,7 @@ function App() {
       setAccounts(acc);
       const contract = loadMerkleAirdropContract(web3Instance);
       setAirdrop(contract);
+      global.window['merkledrop'] = contract;
       const planList = await getAirdropLists(contract);
       setPlans(planList);
     }
@@ -136,6 +144,7 @@ function App() {
           _myAwards.push({
             ...award,
             id: plan.id,
+            paused: plan.paused,
           })
         }
       }
@@ -191,7 +200,7 @@ function App() {
   }
 
   async function claimAll () {
-    const toClaim = myAwards.filter(a => !a.awarded);
+    const toClaim = myAwards.filter(a => !a.awarded && !a.paused);
     const address = accounts[0];
     const ids = toClaim.map(a => a.id);
     const amounts = toClaim.map(a => a.amountWei);
@@ -260,9 +269,10 @@ function App() {
                   <Row style={{marginBottom: '20px'}}>
                     <Radio.Group value={selectedAirdrop} onChange={setSelectedAirdrop}>
                       {myAwards.map(award =>
-                        <Radio value={award.id} key={award.id} disabled={award.awarded}>
+                        <Radio value={award.id} key={award.id} disabled={award.awarded || award.paused}>
                           <span className='text-wrap-all'>
-                            #{award.id} - {award.amount} PHA {award.awarded && `(${t('claimed')})`}
+                            #{award.id} - {award.amount} PHA {
+                              award.awarded ? `(${t('claimed')})` : award.paused ? `(${t('unavailable')})` : ''}
                           </span>
                         </Radio>
                       )}

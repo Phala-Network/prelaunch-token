@@ -1,8 +1,8 @@
-const network = 'kovan';
+const network = 'mainnet';
 const constants = {
     mainnet: {
         etherscanBase: 'https://etherscan.io',
-        airdropAddress: '',
+        airdropAddress: '0x0540eaf7b107fe37615f7e57c4337cb377107ca8',
     },
     kovan: {
         etherscanBase: 'https://kovan.etherscan.io',

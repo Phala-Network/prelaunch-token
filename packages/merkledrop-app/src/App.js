@@ -266,7 +266,7 @@ function App() {
       {NETWORK !== 'mainnet' && <Card type='warning'><h4>Now on {NETWORK}, not mainnet</h4></Card>}
       <Page>
         <Page.Header>
-          <Text h3 style={{marginTop: '15px'}}>PHA {t('Airdrop Claim')}</Text>
+          <Text h3 style={{marginTop: '15px'}}>PHA {t('Award Claim')}</Text>
           <Text small className='links'>
             <Link href='https://phala.network/' color>Home</Link>
             <Link href='https://t.me/phalanetwork' color>Telegram</Link>
@@ -290,7 +290,7 @@ function App() {
               ? (
                 <>
                   <Row style={{marginBottom: '5px'}}>
-                    <Text span size="0.75rem" style={{fontWeight: 500}} type="secondary">{t('AIRDROP AWARDS')}</Text>
+                    <Text span size="0.75rem" style={{fontWeight: 500}} type="secondary">{t('YOUR AWARDS')}</Text>
                   </Row>
                   <Row style={{marginBottom: '20px'}}>
                     <Radio.Group value={selectedAirdrop} onChange={setSelectedAirdrop}>

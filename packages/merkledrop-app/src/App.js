@@ -82,8 +82,11 @@ function App() {
   const [accounts, setAccounts] = useState([]);
   const [airdrop, setAirdrop] = useState(null);
   const [plans, setPlans] = useState([]);
+  // notconnected, loading, ready
+  const [state, setState] = useState('notconnected');  
 
   async function connectWeb3() {
+    setState('notconnected');
     const provider = await web3Modal.connect();
     if (provider) {
       if (provider.on) {
@@ -104,25 +107,32 @@ function App() {
       setProvider(provider);
       const web3Instance = new Web3(provider);
       // setWeb3(web3Instance);
-      const acc = await web3Instance.eth.getAccounts();
-      setAccounts(acc);
       const contract = loadMerkleAirdropContract(web3Instance);
       setAirdrop(contract);
-      global.window['merkledrop'] = contract;
-      const planList = await getAirdropLists(contract);
-      setPlans(planList);
+      const acc = await web3Instance.eth.getAccounts();
+      setAccounts(acc);
+      setState('loading');
+      try {
+        const planList = await getAirdropLists(contract);
+        setPlans(planList);
+        setState('ready');
+      } catch (err) {
+        setState('error');
+        setOtherError(`Error: ${err.message}. Please refresh or try with another network connection.`);
+        throw err;
+      }
     }
   }
 
   async function disconnectWeb3() {
     if(provider.close) {
       await provider.close();
-      web3Modal.clearCachedProvider();
-      setProvider(null);
-      // setWeb3(null);
-      setAccounts([]);
-      setAirdrop(null);
     }
+    web3Modal.clearCachedProvider();
+    setProvider(null);
+    // setWeb3(null);
+    setAccounts([]);
+    setAirdrop(null);
   }
 
   const [myAwards, setMyAwards] = useState([]);
@@ -133,14 +143,14 @@ function App() {
     }
     const address = accounts[0];
     if (plans.length === 0) {
-      console.log('no plan', plans);
+      console.log('No plan', plans);
       return;
     }
 
     const _myAwards = [];
     for (let plan of plans) {
       for (let award of plan.awards) {
-        if (award.address === address) {
+        if (award.address.toLowerCase() === address.toLowerCase()) {
           _myAwards.push({
             ...award,
             id: plan.id,
@@ -171,6 +181,7 @@ function App() {
   const [selectedAirdrop, setSelectedAirdrop] = useState(-1);
   const [sentTx, setSentTx] = useState('');
   const [sentTxError, setSentTxError] = useState('');
+  const [otherError, setOtherError] = useState('');
 
   function linkForEthAccount () {
     if (accounts.length === 0) {
@@ -285,7 +296,16 @@ function App() {
               )
               : (
                 <Row style={{marginBottom: '5px'}}>
-                  <Text span size="0.75rem" style={{fontWeight: 500}} type="secondary">{t('NO AWARD FOUND')}</Text>
+                  <Text span size="0.75rem" style={{fontWeight: 500}} type="secondary">
+                    {state === 'notconnected'
+                      ? t('CONNECTING TO ETHEREUM...')
+                      : state === 'loading'
+                      ? t('LOADING AWARD LIST...')
+                      : state === 'ready'
+                      ? t('NO AWARD FOUND')
+                      : t('CANNOT LOAD AWARD LIST')
+                    }
+                  </Text>
                 </Row>
               )}
 
@@ -316,6 +336,13 @@ function App() {
                 <Card type='error'>
                   <h4>{t('Failed to send transaction')}</h4>
                   <p>{sentTxError}</p>
+                </Card>
+              )}
+
+              {otherError && (
+                <Card type='error'>
+                  <h4>{t('Error occurred')}</h4>
+                  <p>{otherError}</p>
                 </Card>
               )}
             </>

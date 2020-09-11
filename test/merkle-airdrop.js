@@ -96,4 +96,16 @@ contract('MerkleAirdrop', accounts => {
         assert(received.toString() == award.amountBN.toString());
     });
 
+    it('refuses to change token without owner permission', async () => {
+        await truffleAssert.reverts(
+            drop.setToken(pha.address, root, {from: accounts[1]}),
+            "Ownable: caller is not the owner");
+    });
+
+    it('refuses to pause an airdrop without owner permission', async () => {
+        await truffleAssert.reverts(
+            drop.setPause(1, true, {from: accounts[1]}),
+            "Ownable: caller is not the owner");
+    });
+
 });

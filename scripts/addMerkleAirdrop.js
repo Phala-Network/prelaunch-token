@@ -1,6 +1,7 @@
 // USAGE:
 //  WORKDIR='./tmp/md1' DRYRUN=1 truffle exec ./scripts/addMerkleAirdrop.js --network development
 //  WORKDIR='./tmp/md1' DRYRUN=1 truffle exec ./scripts/addMerkleAirdrop.js --network kovan
+//  WORKDIR='./tmp/prod/md1' DRYRUN=1 truffle exec ./scripts/addMerkleAirdrop.js --network mainnet
 
 require('dotenv').config()
 
@@ -11,7 +12,6 @@ const { merklize, toMaterializable } = require('@phala/merkledrop-lib');
 
 const MerkleAirdrop = artifacts.require('MerkleAirdrop');
 // const PHAToken = artifacts.require('PHAToken');
-const BN = web3.utils.BN;
 
 const dryrun = parseInt(process.env.DRYRUN || '1');
 const workdir = process.env.WORKDIR;
@@ -50,8 +50,8 @@ async function initPinata() {
     return pinata;
 }
 
-async function publishPlanToIpfs (pinata, plan, name) {
-    const { IpfsHash } = await pinata.pinFromFS(outJson, {
+async function publishPlanToIpfs (pinata, path, name) {
+    const { IpfsHash } = await pinata.pinFromFS(path, {
         pinataMetadata: {name},
     });
     return IpfsHash;
@@ -91,7 +91,8 @@ async function main () {
 
     // publish the plan to IPFS
     console.log('Publishing to IPFS...');
-    const hash = await publishPlanToIpfs(pinata, outJson, `merkle-airdrop-${plan.id}`);
+    const contractAddrPrefix = drop.address.substring(2, 8);
+    const hash = await publishPlanToIpfs(pinata, outJson, `merkle-airdrop-${contractAddrPrefix}-${plan.id}`);
 
     // save manifest
     const manifest = {
@@ -117,7 +118,7 @@ async function main () {
 
     const uri = '/ipfs/' + hash;
     console.log('Adding airdrop', {root: merklized.root, uri});
-    const r = await drop.start(merklized.root, uri);
+    const r = await drop.start(merklized.root, uri, {gas: 150000});
     console.log('Done', r);
 }
 

@@ -3,6 +3,7 @@ import { GeistProvider, CssBaseline, Button, Card, Description, Link, Page, Radi
 import * as Icon from '@geist-ui/react-icons'
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
+import pAny from 'p-any';
 // import '@zeit-ui/themes/index.css'
 import { combineProofs } from '@phala/merkledrop-lib';
 
@@ -13,7 +14,12 @@ import './App.css';
 import { network, etherscanBase, loadMerkleAirdropContract } from './contracts';
 
 const NETWORK = network;
-const IPFS_BASE = 'https://ipfs.io/ipfs';
+const IPFS_BASES = [
+  'https://10.via0.com/ipfs',
+  'https://ipfs.io/ipfs',
+  'https://ipfs.leiyun.org/ipfs',
+  'https://cloudflare-ipfs.com/ipfs',
+];
 
 const providerOptions = {};
 const web3Modal = new Web3Modal({
@@ -40,10 +46,19 @@ function etherscanTxLink (tx) {
   return `${etherscanBase}/tx/${tx}`;
 }
 
+async function agumentedIpfsGet(hash) {
+  const promises = IPFS_BASES.map(ipfsBase => axios.get(`${ipfsBase}/${hash}`));
+  if (Promise.any) {
+    return await Promise.any(promises);
+  } else {
+    console.warn('No Promise.any, fallback to p-any');
+    return await pAny(promises);
+  }
+}
+
 async function getAirdropPlan(uri) {
   const hash = uri.replace('/ipfs/', '');
-  const link = `${IPFS_BASE}/${hash}`;
-  const resp = await axios.get(link);
+  const resp = await agumentedIpfsGet(hash);
   return resp.data;
 }
 

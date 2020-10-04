@@ -11,7 +11,7 @@ const bn1e15 = new BN('1000000000000000');
 module.exports = function(data, addressField, amountField, includeFields) {
   let awards = data.reduce((prev, curr) => {
     const address = curr[addressField];
-    const existing = prev.find(u => u.address === address);
+    const existing = prev.find(u => u.address.toLowerCase() === address.toLowerCase());
     const amount = curr[amountField];
     if(existing) {
       existing.amount = (existing.amount || 0) + amount;

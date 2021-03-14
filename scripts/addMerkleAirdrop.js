@@ -11,7 +11,7 @@ const pinataSDK = require('@pinata/sdk');
 const { merklize, toMaterializable } = require('@phala/merkledrop-lib');
 
 const MerkleAirdrop = artifacts.require('MerkleAirdrop');
-// const PHAToken = artifacts.require('PHAToken');
+const PHAToken = artifacts.require('PHAToken');
 
 const dryrun = parseInt(process.env.DRYRUN || '1');
 const workdir = process.env.WORKDIR;
@@ -62,7 +62,8 @@ async function main () {
 
     const pinata = await initPinata();
     const drop = await MerkleAirdrop.deployed();
-    // const pha = await PHAToken.at(netConsts.phaTokenAddress);
+    const pha = await PHAToken.deployed();
+    const [account] = await web3.eth.getAccounts();
 
     const curDrops = await drop.airdropsCount();
     console.log('Current airdrops:', curDrops.toNumber());
@@ -104,12 +105,25 @@ async function main () {
     fs.writeFileSync(outManifest, manifestJson, {encoding: 'utf-8'});
 
     // !!!
+    const total = merklized.awards.map(a => parseFloat(a.amount)).reduce((a, x) => a + x, 0);
     console.log('About to add merkle airdrop', {
         root: merklized.root,
         size: merklized.awards.length,
-        total: merklized.awards.map(a => parseFloat(a.amount)).reduce((a, x) => a + x, 0),
+        total,
         manifest
     });
+
+    const remainingAllowance = await pha.allowance(account, drop.address);
+    const remaining = parseFloat(web3.utils.fromWei(remainingAllowance));
+    if (remaining <= total) {
+        console.error(`Insufficient allowance (${remaining} <= ${total}). Exiting...`);
+        return;
+    }
+    if (remaining * 0.8 <= total) {
+        console.warn('Require > 80% of the allowance', {remaining, required: total});
+    } else {
+        console.info('Sufficient allowance', {remaining, required: total});
+    }
 
     if (dryrun) {
         console.log('Dryrun enabled. Exiting...');
@@ -118,7 +132,7 @@ async function main () {
 
     const uri = '/ipfs/' + hash;
     console.log('Adding airdrop', {root: merklized.root, uri});
-    const r = await drop.start(merklized.root, uri, {gas: 150000});
+    const r = await drop.start(merklized.root, uri, {gas: 150000, gasPrice: 125 * 1e9, nonce: undefined});
     console.log('Done', r);
 }
 

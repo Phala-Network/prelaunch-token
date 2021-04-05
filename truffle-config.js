@@ -25,6 +25,7 @@ const TrezorProvider = require("@phala/trezor-provider");
 const keys = {
   api: process.env.INFURA,
   kovan: process.env.KOVAN_KEY,
+  etherscan: process.env.ETHERSCAN_KEY,
 }
 
 module.exports = {
@@ -90,7 +91,8 @@ module.exports = {
       gasPrice: 40000000000, // https://kovan.etherscan.io/chart/gasprice
       confirmations: 0,    // # of confs to wait between deployments. (default: 0)
       timeoutBlocks: 10,  // # of blocks before a deployment times out  (minimum/default: 50)
-      skipDryRun: true     // Skip dry run before migrations? (default: false for public nets )
+      skipDryRun: true,     // Skip dry run before migrations? (default: false for public nets )
+      networkCheckTimeout: 10000,
     },
 
     // Useful for private networks
@@ -106,8 +108,8 @@ module.exports = {
         1, "m/44'/60'/0'/0/5"
       ),
       network_id: 1,         // Mainnet's id
-      gas: 70000,            // A tight gas limit, original 5500000
-      gasPrice: 130_000_000_000,  // 130 Gwei
+      gas: 1500000,            // A tight gas limit, original 5500000
+      gasPrice: 100 * 1e9,  // 100 Gwei
       confirmations: 0,      // # of confs to wait between deployments. (default: 0)
       timeoutBlocks: 100,    // # of blocks before a deployment times out  (minimum/default: 50)
       skipDryRun: true,      // Skip dry run before migrations? (default: false for public nets )

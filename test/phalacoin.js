@@ -1,6 +1,6 @@
 const truffleAssert = require('truffle-assertions');
 
-const PHAToken = artifacts.require('PHAToken');
+const PHAToken = artifacts.require('Token');
 const BN = web3.utils.BN;
 
 const UNIT = new BN('1000000000000000000');

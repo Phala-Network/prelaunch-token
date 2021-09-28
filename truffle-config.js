@@ -52,7 +52,7 @@ module.exports = {
       ),
       network_id: 42,       // Kovan's id
       gas: 5500000,
-      gasPrice: 40 * 1e9, // https://kovan.etherscan.io/chart/gasprice
+      gasPrice: 1.5 * 1e9, // https://kovan.etherscan.io/chart/gasprice
       confirmations: 0,    // # of confs to wait between deployments. (default: 0)
       timeoutBlocks: 10,  // # of blocks before a deployment times out  (minimum/default: 50)
       skipDryRun: true,     // Skip dry run before migrations? (default: false for public nets )
@@ -65,8 +65,7 @@ module.exports = {
         `https://mainnet.infura.io/v3/${keys.api}`,
       ),
       network_id: 1,         // Mainnet's id
-      gas: 1500000,            // A tight gas limit, original 5500000
-      gasPrice: 100 * 1e9,  // 100 Gwei
+      gasPrice: 45 * 1e9,  // 100 Gwei
       confirmations: 0,      // # of confs to wait between deployments. (default: 0)
       timeoutBlocks: 100,    // # of blocks before a deployment times out  (minimum/default: 50)
       skipDryRun: true,      // Skip dry run before migrations? (default: false for public nets )
@@ -79,7 +78,7 @@ module.exports = {
       settings: {
         optimizer: {
           enabled: true,
-          runs: 100,
+          runs: 1000,
         }
       }
     }

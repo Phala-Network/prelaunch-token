@@ -4,7 +4,7 @@
     "build": "lerna run build"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^2.5.0",
+    "@openzeppelin/contracts": "^4.4.2",
     "@phala/merkledrop-lib": "^1.0.0",
     "@phala/trezor-provider": "^1.0.34",
     "@pinata/sdk": "^1.1.11",
